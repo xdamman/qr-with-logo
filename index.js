@@ -25,17 +25,16 @@ function validateParams(
   };
 
   if (embedded_data && logo_image_path && output_type) {
-    if (output_type == "PNG") {
+    if (output_type == "png") {
       if (!saveas_file_name || typeof saveas_file_name != "string") {
         throw SyntaxError(
           JSON.stringify({
             name: ERRORS["INSUFF_PARAMS"].name,
             message:
-              "saveas_file_name" + ERRORS["INSUFF_PARAMS"].message + "to PNG",
+              "saveas_file_name" + ERRORS["INSUFF_PARAMS"].message + "to png",
           })
         );
       }
-      console.log("All PNG parameters");
     }
   }
 
@@ -82,7 +81,7 @@ function validateParams(
     );
   }
 
-  if (saveas_file_name.lastIndexOf(".") == "-1") {
+  if (saveas_file_name && saveas_file_name.lastIndexOf(".") == "-1") {
     throw SyntaxError(
       JSON.stringify({
         name: ERRORS["INVALID_IMGFILE"].name,
@@ -103,7 +102,7 @@ async function generateQRWithLogo(
   embedded_data, // qr code data
   logo_image_path, // relative path
   qr_options,
-  output_type, // Base64 or PNG
+  output_type, // base64 or png
   saveas_file_name
 ) {
   validateParams(
@@ -127,7 +126,7 @@ async function generateQRWithLogo(
     output_type,
     saveas_file_name
   );
-  if (output_type == "PNG") {
+  if (output_type == "png") {
     return saveas_file_name;
   } else {
     return qrlogo_b64;
@@ -143,7 +142,7 @@ async function generateQR(embedded_data, options) {
   }
 }
 
-async function saveAsPNG(b64, filename) {
+async function saveAspng(b64, filename) {
   console.log("Saving QR as: " + filename);
   let base64Data = await b64.replace(/^data:image\/png;base64,/, "");
   fs.writeFileSync(filename, base64Data, "base64");
@@ -160,11 +159,11 @@ async function addLogoToQRImage(
     Buffer.from(b64.replace(/^data:image\/png;base64,/, ""), "base64")
   ).composite([{ input: logo_image_path, gravity: "centre" }]);
 
-  if (output_type == "Base64") {
+  if (output_type == "base64") {
     const buf = await newImage.toBuffer();
     let base64data = Buffer.from(buf, "binary").toString("base64");
     return base64data;
-  } else if (output_type == "PNG") {
+  } else if (output_type == "png") {
     await newImage.toFile(saveas_file_name);
     return saveas_file_name;
   }

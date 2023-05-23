@@ -1,6 +1,6 @@
 const QRLogo = require("../index.js");
 
-const data = JSON.stringify({
+const QRCodeData = JSON.stringify({
   name: "Zacharie Happel",
   job: "Student/Intern",
   grade: "Senior",
@@ -8,29 +8,28 @@ const data = JSON.stringify({
 
 async function testPNG() {
   const res = await QRLogo.generateQRWithLogo(
-    data,
+    QRCodeData,
     "test/node-js-logo.png",
     {},
-    "PNG",
-    "qrlogo.png"
+    "png",
+    "test/qrlogo.png"
   );
   console.log(">>> res", res);
 }
 
 async function testBase64() {
   const res = await QRLogo.generateQRWithLogo(
-    data,
+    QRCodeData,
     "test/node-js-logo.png",
     {},
-    "Base64",
-    "qrlogo.png"
+    "base64"
   );
   console.log(">>> res", res);
 }
 
 async function performTests() {
   await testPNG();
-  //   await testBase64();
+  await testBase64();
 }
 
 performTests();
