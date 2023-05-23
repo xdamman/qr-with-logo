@@ -2,48 +2,27 @@ const qrcode = require("qrcode");
 const sharp = require("sharp");
 const fs = require("fs");
 
-const ERRORS = {
-  INSUFF_PARAMS: {
-    name: "InsufficientParameters Error",
-    message: " is required when outputting QR code ",
-  },
-  ERR_CK: {
-    name: "ErrorChecking Error",
-    message: "Error occurred while error-checking parameters",
-  },
-  INVALID_IMGFILE: {
-    name: "InvalidImageFilePath Error",
-    message: " is an invalid image file path for the parameter ",
-  },
-};
-
-async function generateQRWithLogo(
+function validateParams(
   embedded_data,
   logo_image_path,
   qr_options,
   output_type,
-  saveas_file_name,
-  callback
+  saveas_file_name
 ) {
-  /**
-   *
-   *
-   * Questions for self:
-   * -- Currently I am checking to see if there are callbacks, should this be the case? If I were to return
-   *    the Base64, would that be fine? I don't see why not..
-   *
-   * -- How can I effectively throw my error-objects without them being display in console as <Object> ?
-   *     -- Inside of async functions, this occurs
-   *     -- Can a non-async function be properly awaited on?  [TEST this]
-   *     --> Currently throwing a SyntaxError with the a JSON.stringified version of the error object as the message
-   */
-
-  let qr_image_path = `init_non_logo_qr_${new Date().getTime()}.png`;
-  console.log("This is saveas_file_name: " + saveas_file_name);
-  let is_saveas_file_name_a_string = typeof saveas_file_name == "string";
-  console.log(
-    "saveas_file_name instanceof String: " + is_saveas_file_name_a_string
-  );
+  const ERRORS = {
+    INSUFF_PARAMS: {
+      name: "InsufficientParameters Error",
+      message: " is required when outputting QR code ",
+    },
+    ERR_CK: {
+      name: "ErrorChecking Error",
+      message: "Error occurred while error-checking parameters",
+    },
+    INVALID_IMGFILE: {
+      name: "InvalidImageFilePath Error",
+      message: " is an invalid image file path for the parameter ",
+    },
+  };
 
   if (embedded_data && logo_image_path && output_type) {
     if (output_type == "PNG") {
@@ -118,125 +97,76 @@ async function generateQRWithLogo(
   if (qr_options.length == 0) {
     qr_options = { errorCorrectionLevel: "H" };
   }
-
-  await generateQR(embedded_data, qr_options, async function (b64) {
-    return await saveAsPNG(b64, qr_image_path, async function () {
-      if (output_type == "PNG") {
-        await addLogoToQRImage(
-          qr_image_path,
-          logo_image_path,
-          "PNG",
-          saveas_file_name,
-          async function () {
-            return saveas_file_name;
-          }
-        );
-      } else if (output_type == "Base64") {
-        await addLogoToQRImage(
-          qr_image_path,
-          logo_image_path,
-          "Base64",
-          saveas_file_name,
-          async function (qrlogo_b64) {
-            await fs.unlink(qr_image_path);
-            return qrlogo_b64;
-          }
-        );
-      }
-    });
-  });
 }
 
-async function generateQR(embedded_data, options, callback) {
-  if (typeof options === "object") {
-    try {
-      await qrcode.toDataURL(embedded_data, options, function (err, b64) {
-        if (b64) {
-          callback(b64);
-        } else if (err) {
-          console.log(err);
-        }
-      });
-    } catch (err) {
-      console.error(err);
-    }
+async function generateQRWithLogo(
+  embedded_data, // qr code data
+  logo_image_path, // relative path
+  qr_options,
+  output_type, // Base64 or PNG
+  saveas_file_name
+) {
+  validateParams(
+    embedded_data,
+    logo_image_path,
+    qr_options,
+    output_type,
+    saveas_file_name
+  );
+
+  qr_options = qr_options || {};
+  qr_options.width = qr_options.width || 600;
+  qr_options.margin = qr_options.margin || 1;
+
+  const b64 = await generateQR(embedded_data, qr_options);
+
+  // console.log(">>> b64", b64);
+  const qrlogo_b64 = await addLogoToQRImage(
+    b64,
+    logo_image_path,
+    output_type,
+    saveas_file_name
+  );
+  if (output_type == "PNG") {
+    return saveas_file_name;
   } else {
-    try {
-      await qrcode.toDataURL(
-        embedded_data,
-        { errorCorrectionLevel: "H" },
-        function (err, b64) {
-          if (b64) {
-            callback(b64);
-          } else if (err) {
-            console.log(err);
-          }
-        }
-      );
-    } catch (err) {
-      console.error(err);
-    }
+    return qrlogo_b64;
   }
 }
 
-/** @param callback  file name that it was saved as is passed to the callback function */
-async function saveAsPNG(b64, filename, callback) {
+async function generateQR(embedded_data, options) {
+  options = options || { errorCorrectionLevel: "H" };
+  try {
+    return await qrcode.toDataURL(embedded_data, options);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function saveAsPNG(b64, filename) {
   console.log("Saving QR as: " + filename);
   let base64Data = await b64.replace(/^data:image\/png;base64,/, "");
-  fs.writeFile(filename, base64Data, "base64", function () {
-    if (callback) {
-      callback(filename);
-    }
-  });
+  fs.writeFileSync(filename, base64Data, "base64");
+  return filename;
 }
 
 async function addLogoToQRImage(
-  qr_image_path,
+  b64,
   logo_image_path,
   output_type,
-  saveas_file_name,
-  callback
+  saveas_file_name
 ) {
+  const newImage = await sharp(
+    Buffer.from(b64.replace(/^data:image\/png;base64,/, ""), "base64")
+  ).composite([{ input: logo_image_path, gravity: "centre" }]);
+
   if (output_type == "Base64") {
-    if (!callback) {
-      console.log("Error: No callback provided");
-    } else {
-      console.log("Output: Base64", "logo_image_path", logo_image_path);
-      await sharp(qr_image_path)
-        .composite([{ input: logo_image_path, gravity: "centre" }])
-        .toBuffer((err, data, info) => {
-          if (err) {
-            console.log("Error Converting Image Buffer to Base 64: \n" + err);
-          }
-
-          if (data) {
-            let base64data = Buffer.from(data, "binary").toString("base64");
-            callback(base64data);
-            console.log("base64data", base64data);
-          }
-        });
-    }
+    const buf = await newImage.toBuffer();
+    let base64data = Buffer.from(buf, "binary").toString("base64");
+    return base64data;
   } else if (output_type == "PNG") {
-    console.log("Output: PNG");
-    console.log("SaveAs: " + saveas_file_name);
-
-    if (saveas_file_name) {
-      try {
-        sharp(qr_image_path)
-          .composite([{ input: logo_image_path, gravity: "centre" }])
-          .toFile(saveas_file_name);
-      } catch (err) {
-        console.log(
-          "Error encountered when attempting to save QR with logo, check 'saveas_file_name' parameter"
-        );
-        console.log(err);
-      }
-    } else {
-      console.log(
-        "Error: Unable to save QR with logo because 'saveas_file_name' is not defined"
-      );
-      // throw error *****
-    }
+    await newImage.toFile(saveas_file_name);
+    return saveas_file_name;
   }
 }
 
