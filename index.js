@@ -115,14 +115,18 @@ async function generateQRWithLogo(
 
   qr_options = qr_options || {};
   qr_options.width = qr_options.width || 600;
-  qr_options.margin = qr_options.margin || 1;
+  qr_options.margin = qr_options.margin || 0;
 
   const b64 = await generateQR(embedded_data, qr_options);
 
-  // console.log(">>> b64", b64);
+  const logoWidth = Math.floor(qr_options.width / 3.33);
+  const logoBuffer = await sharp(logo_image_path)
+    .resize({ width: logoWidth })
+    .toBuffer();
+
   const qrlogo_b64 = await addLogoToQRImage(
-    b64,
-    logo_image_path,
+    Buffer.from(b64.replace(/^data:image\/png;base64,/, ""), "base64"),
+    logoBuffer,
     output_type,
     saveas_file_name
   );
@@ -142,22 +146,15 @@ async function generateQR(embedded_data, options) {
   }
 }
 
-async function saveAspng(b64, filename) {
-  console.log("Saving QR as: " + filename);
-  let base64Data = await b64.replace(/^data:image\/png;base64,/, "");
-  fs.writeFileSync(filename, base64Data, "base64");
-  return filename;
-}
-
 async function addLogoToQRImage(
-  b64,
-  logo_image_path,
+  qrcodeImageBuffer,
+  logo,
   output_type,
   saveas_file_name
 ) {
-  const newImage = await sharp(
-    Buffer.from(b64.replace(/^data:image\/png;base64,/, ""), "base64")
-  ).composite([{ input: logo_image_path, gravity: "centre" }]);
+  const newImage = await sharp(qrcodeImageBuffer).composite([
+    { input: logo, gravity: "centre" },
+  ]);
 
   if (output_type == "base64") {
     const buf = await newImage.toBuffer();
