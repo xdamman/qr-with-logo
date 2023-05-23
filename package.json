@@ -24,7 +24,7 @@
   "homepage": "https://github.com/ZachHappel/qr-with-logo#readme",
   "description": "",
   "dependencies": {
-    "qrcode": "^1.4.1",
-    "sharp": "^0.30.5"
+    "qrcode": "^1.5.3",
+    "sharp": "^0.32.1"
   }
 }
