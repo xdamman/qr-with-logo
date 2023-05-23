@@ -120,7 +120,7 @@ async function generateQRWithLogo(
   }
 
   await generateQR(embedded_data, qr_options, async function (b64) {
-    await saveAsPNG(b64, qr_image_path, async function () {
+    return await saveAsPNG(b64, qr_image_path, async function () {
       if (output_type == "PNG") {
         await addLogoToQRImage(
           qr_image_path,
@@ -128,46 +128,18 @@ async function generateQRWithLogo(
           "PNG",
           saveas_file_name,
           async function () {
-            callback(); // No-parameter callback, in the event
-            /**
-                    await fs.stat(qr_image_path, async function (err, stats) {
-                        console.log('Stats: ' + stats);//here we got all information of file in stats variable
-
-                        if (err) {
-                            console.log("ERRRRRR");
-                            throw console.error(err);
-                        }
-
-                        await fs.unlink(qr_image_path, function(err){
-                            if(err) { throw(err);}
-                            console.log('file deleted successfully');
-                            callback();
-                        });
-
-                       // callback(); // No-parameter callback, in the event
-                    });
-
-                    **/
+            return saveas_file_name;
           }
         );
       } else if (output_type == "Base64") {
-        console.log(
-          "qr_image_path",
-          qr_image_path,
-          "logo_image_path",
-          logo_image_path
-        );
         await addLogoToQRImage(
           qr_image_path,
           logo_image_path,
           "Base64",
           saveas_file_name,
           async function (qrlogo_b64) {
-            console.log("Base 64 Data: " + qrlogo_b64);
-
-            await fs.unlink(qr_image_path, async function () {
-              callback(qrlogo_b64);
-            });
+            await fs.unlink(qr_image_path);
+            return qrlogo_b64;
           }
         );
       }
@@ -242,35 +214,6 @@ async function addLogoToQRImage(
             callback(base64data);
             console.log("base64data", base64data);
           }
-
-          /*
-                    async function waitForData(cb) {
-
-                        if (data) {
-                            console.log('Data exists');
-                            await cb(await Buffer.from(data, 'binary').toString('base64'));
-                            //console.log('This is data...');
-                            //console.log(data);
-                            //let base64data = await Buffer.from(data, 'binary').toString('base64');
-                            //console.log("Base64 Inside AddLogoToQRImage: \n" + base64data);
-
-                        } else {
-                            setTimeout(() => {
-                                console.log('Waiting for data...');
-                                waitForData(async function(b64){
-                                    console.log("Done Waiting For Data: ");
-                                    callback(b64)
-                                });
-                            },100)
-                        }
-                    }
-
-                    await waitForData(async function(b64){
-                      console.log("Done Waiting For Data: ");
-                      callback(b64)
-                    });
-
-                     */
         });
     }
   } else if (output_type == "PNG") {
