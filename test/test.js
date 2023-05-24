@@ -9,10 +9,10 @@ const QRCodeData = JSON.stringify({
 async function testPNG() {
   const res = await QRLogo.generateQRWithLogo(
     QRCodeData,
-    "test/node-js-logo.png",
+    "https://vouchergenerator.regensunite.earth/nft-logo.png",
     {},
     "png",
-    "test/qrlogo.png"
+    "qrcode.png"
   );
   console.log(">>> res", res);
 }

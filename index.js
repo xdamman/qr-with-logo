@@ -1,6 +1,7 @@
 const qrcode = require("qrcode");
 const sharp = require("sharp");
 const fs = require("fs");
+const fetch = require("isomorphic-fetch");
 
 function validateParams(
   embedded_data,
@@ -120,7 +121,16 @@ async function generateQRWithLogo(
   const b64 = await generateQR(embedded_data, qr_options);
 
   const logoWidth = Math.floor(qr_options.width / 3.33);
-  const logoBuffer = await sharp(logo_image_path)
+  let buffer;
+  if (logo_image_path.startsWith("http")) {
+    const response = await fetch(logo_image_path);
+    buffer = await response.buffer();
+  } else {
+    console.log(">>> logo_image_path ", logo_image_path);
+    buffer = fs.readFileSync(logo_image_path);
+  }
+
+  const logoBuffer = await sharp(buffer)
     .resize({ width: logoWidth })
     .toBuffer();
 
