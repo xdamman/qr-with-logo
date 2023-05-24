@@ -1,6 +1,6 @@
 {
   "name": "qr-with-logo",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "main": "index.js",
   "scripts": {
     "test": "test/test.js"
