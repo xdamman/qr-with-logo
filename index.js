@@ -120,7 +120,7 @@ async function generateQRWithLogo(
 
   const b64 = await generateQR(embedded_data, qr_options);
 
-  const logoWidth = Math.floor(qr_options.width / 3.33);
+  const logoWidth = qr_options.logoWidth || Math.floor(qr_options.width / 3.5);
   let buffer;
   if (logo_image_path.startsWith("http")) {
     const response = await fetch(logo_image_path);
